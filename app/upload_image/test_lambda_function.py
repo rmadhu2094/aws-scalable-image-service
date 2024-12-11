@@ -1,119 +1,93 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
-from botocore.exceptions import ClientError
-
+import base64
 from lambda_function import lambda_handler
 
+class TestUploadImageLambdaHandler(unittest.TestCase):
 
-class TestImageUpload(unittest.TestCase):
+    @patch('lambda_function.upload_to_s3')
+    @patch('lambda_function.save_metadata_to_dynamodb')
+    def test_lambda_handler_success(self, mock_save_metadata_to_dynamodb, mock_upload_to_s3):
+        mock_upload_to_s3.return_value = 'test-image.jpg'
+        mock_save_metadata_to_dynamodb.return_value = None
 
-    @patch('boto3.client')
-    @patch('boto3.resource')
-    def test_upload_image_success(self, mock_dynamodb, mock_s3):
-        # Mock S3 client and DynamoDB resource
-        mock_s3_client = MagicMock()
-        mock_s3.return_value = mock_s3_client
-        mock_dynamodb_resource = MagicMock()
-        mock_dynamodb.return_value = mock_dynamodb_resource
-
-        # Mock DynamoDB Table
-        mock_table = MagicMock()
-        mock_dynamodb_resource.Table.return_value = mock_table
-
-        # Mock the image metadata insertion into DynamoDB
-        mock_table.put_item.return_value = {"ResponseMetadata": {"HTTPStatusCode": 200}}
-
-        # Mock S3 upload
-        mock_s3_client.upload_fileobj.return_value = None
+        dummy_image_data = base64.b64encode(b"dummy image data").decode('utf-8')
 
         event = {
             'body': json.dumps({
-                'image_id': '12345-abcde',
-                'image_name': 'sample.jpg',
-                'user_id': 'user123',
-                'tags': ['tag1', 'tag2']
-            }),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+                'image_file': dummy_image_data,
+                'title': 'Test Image',
+                'description': 'Test Description'
+            })
         }
 
-        context = {}
+        response = lambda_handler(event, None)
 
-        response = lambda_handler(event, context)
-
-        # Assertions
         self.assertEqual(response['statusCode'], 200)
-        self.assertIn('image_id', json.loads(response['body']))
-        self.assertEqual(json.loads(response['body'])['message'], 'Image uploaded successfully')
+        body = json.loads(response['body'])
+        self.assertEqual(body['message'], 'Image uploaded successfully')
+        self.assertIn('image_id', body)
 
-    @patch('boto3.client')
-    @patch('boto3.resource')
-    def test_upload_image_missing_metadata(self, mock_dynamodb, mock_s3):
-        # Mock S3 client and DynamoDB resource
-        mock_s3_client = MagicMock()
-        mock_s3.return_value = mock_s3_client
-        mock_dynamodb_resource = MagicMock()
-        mock_dynamodb.return_value = mock_dynamodb_resource
-
-        # Mock DynamoDB Table
-        mock_table = MagicMock()
-        mock_dynamodb_resource.Table.return_value = mock_table
-
+    @patch('lambda_function.upload_to_s3')
+    @patch('lambda_function.save_metadata_to_dynamodb')
+    def test_lambda_handler_missing_fields(self, mock_save_metadata_to_dynamodb, mock_upload_to_s3):
         event = {
             'body': json.dumps({
-                'image_id': '12345-abcde',
-            }),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+                'image_file': '',
+                'title': 'Test Image'
+            })
         }
 
-        context = {}
+        response = lambda_handler(event, None)
 
-        response = lambda_handler(event, context)
-
-        # Assertions
         self.assertEqual(response['statusCode'], 400)
-        self.assertIn('message', json.loads(response['body']))
-        self.assertEqual(json.loads(response['body'])['message'], 'Metadata missing')
+        body = json.loads(response['body'])
+        self.assertEqual(body['message'], 'Image file, title, and description are required')
 
-    @patch('boto3.client')
-    @patch('boto3.resource')
-    def test_upload_image_s3_failure(self, mock_dynamodb, mock_s3):
-        # Mock S3 client and DynamoDB resource
-        mock_s3_client = MagicMock()
-        mock_s3.return_value = mock_s3_client
-        mock_dynamodb_resource = MagicMock()
-        mock_dynamodb.return_value = mock_dynamodb_resource
+    @patch('lambda_function.upload_to_s3')
+    #@patch('lambda_function.save_metadata_to_dynamodb')
+    def test_lambda_handler_upload_failure(self,mock_upload_to_s3):
+        mock_upload_to_s3.side_effect = Exception('S3 upload error')
 
-        # Mock DynamoDB Table
-        mock_table = MagicMock()
-        mock_dynamodb_resource.Table.return_value = mock_table
-
-        mock_s3_client.upload_fileobj.side_effect = ClientError({'Error': {'Code': 'NoSuchBucket'}}, 'Upload')
+        dummy_image_data = base64.b64encode(b"dummy image data").decode('utf-8')
 
         event = {
             'body': json.dumps({
-                'image_id': '12345-abcde',
-                'image_name': 'sample.jpg',
-                'user_id': 'user123',
-                'tags': ['tag1', 'tag2']
-            }),
-            'headers': {
-                'Content-Type': 'application/json'
-            }
+                'image_file': dummy_image_data,
+                'title': 'Test Image',
+                'description': 'Test Description'
+            })
         }
 
-        context = {}
-        response = lambda_handler(event, context)
+        response = lambda_handler(event, None)
 
-        # Assertions
         self.assertEqual(response['statusCode'], 500)
-        self.assertIn('message', json.loads(response['body']))
-        self.assertTrue('Error uploading image to S3' in json.loads(response['body'])['message'])
+        body = json.loads(response['body'])
+        self.assertEqual(body['message'], 'S3 upload error')
 
+    @patch('lambda_function.upload_to_s3')
+    @patch('lambda_function.save_metadata_to_dynamodb')
+    def test_lambda_handler_metadata_save_failure(self, mock_save_metadata_to_dynamodb, mock_upload_to_s3):
+        mock_upload_to_s3.return_value = 'test-image.jpg'
+
+        mock_save_metadata_to_dynamodb.side_effect = Exception('DynamoDB error')
+
+        dummy_image_data = base64.b64encode(b"dummy image data").decode('utf-8')
+
+        event = {
+            'body': json.dumps({
+                'image_file': dummy_image_data,
+                'title': 'Test Image',
+                'description': 'Test Description'
+            })
+        }
+
+        response = lambda_handler(event, None)
+
+        self.assertEqual(response['statusCode'], 500)
+        body = json.loads(response['body'])
+        self.assertEqual(body['message'], 'DynamoDB error')
 
 if __name__ == '__main__':
     unittest.main()

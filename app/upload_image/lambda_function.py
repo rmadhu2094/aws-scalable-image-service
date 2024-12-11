@@ -7,8 +7,8 @@ from botocore.exceptions import ClientError
 S3_BUCKET_NAME = 'image-bucket'
 DYNAMODB_TABLE_NAME = 'images-metadata'
 
-s3 = boto3.client('s3', endpoint_url='http://localhost:4566')
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:4566')
+s3 = boto3.client('s3',region_name='eu-west-1', endpoint_url='http://localhost:4566')
+dynamodb = boto3.resource('dynamodb',region_name='eu-west-1', endpoint_url='http://localhost:4566')
 
 def upload_to_s3(file_data, filename):
     try:
