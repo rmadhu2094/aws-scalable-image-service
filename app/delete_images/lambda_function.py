@@ -66,7 +66,7 @@ def lambda_handler(event, context):
             }
 
         # Get the S3 key from the image metadata
-        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[1]
+        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[0]
 
         # Delete the image from S3
         delete_image_from_s3(s3_key)
