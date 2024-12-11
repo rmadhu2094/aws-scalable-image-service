@@ -48,7 +48,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'message': 'Image not found'})
             }
 
-        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[1]
+        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[0]
 
         presigned_url = generate_presigned_url(S3_BUCKET_NAME, s3_key)
 
