@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 S3_BUCKET_NAME = 'image_bucket'
 DYNAMODB_TABLE_NAME = 'images-metadata'
 
-dynamodb = boto3.resource('dynamodb')
-s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb',endpoint_url='http://localhost:4566')
+s3 = boto3.client('s3', endpoint_url='http://localhost:4566')
 
 def get_image_metadata(image_id):
     table = dynamodb.Table(DYNAMODB_TABLE_NAME)

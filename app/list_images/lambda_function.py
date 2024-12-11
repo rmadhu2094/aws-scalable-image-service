@@ -6,7 +6,7 @@ S3_BUCKET_NAME = 'image-bucket'
 DYNAMODB_TABLE_NAME = 'images-metadata'
 
 # Initialize DynamoDB client
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:4566')
 
 # Helper function to query DynamoDB with optional filters
 def query_images(title=None, description=None, limit=10):
