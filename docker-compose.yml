@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"   # Edge port for all services
+      - "4571:4571"   # Optional: older ports for services
+    environment:
+      - SERVICES=s3,dynamodb,lambda,apigateway   # AWS services to emulate
+      - EDGE_PORT=4566
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data           # Persist data locally
+    volumes:
+      - "C:\\Users\\m.ranganatha\\localstack:/var/lib/localstack"  # Windows volume path
+      - "/var/run/docker.sock:/var/run/docker.sock"  # Required for Docker-in-Docker
