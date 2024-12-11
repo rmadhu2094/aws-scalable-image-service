@@ -6,8 +6,8 @@ S3_BUCKET_NAME = 'image_bucket'
 DYNAMODB_TABLE_NAME = 'images-metadata'
 
 # Initialize DynamoDB and S3 clients
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:4566')
-s3 = boto3.client('s3', endpoint_url='http://localhost:4566')
+dynamodb = boto3.resource('dynamodb',region_name='eu-west-1', endpoint_url='http://localhost:4566')
+s3 = boto3.client('s3',region_name='eu-west-1', endpoint_url='http://localhost:4566')
 
 # get image metadata from DynamoDB by image_id
 def get_image_metadata(image_id):
