@@ -2,12 +2,12 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-S3_BUCKET_NAME = 'image_bucket'
+S3_BUCKET_NAME = 'image-bucket-madhu'
 DYNAMODB_TABLE_NAME = 'images-metadata'
 
 # Initialize DynamoDB and S3 clients
-dynamodb = boto3.resource('dynamodb',region_name='eu-west-1', endpoint_url='http://localhost:4566')
-s3 = boto3.client('s3',region_name='eu-west-1', endpoint_url='http://localhost:4566')
+dynamodb = boto3.resource('dynamodb')
+s3 = boto3.client('s3')
 
 # get image metadata from DynamoDB by image_id
 def get_image_metadata(image_id):
@@ -65,14 +65,15 @@ def lambda_handler(event, context):
                 'body': json.dumps({'message': 'Image not found'})
             }
 
-        # Get the S3 key from the image metadata
-        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[0]
-
-        # Delete the image from S3
-        delete_image_from_s3(s3_key)
+        # Get the S3 key 
+        s3_key = f'{image_id}.jpg'
 
         # Delete the image metadata from DynamoDB
         delete_image_metadata_from_dynamodb(image_id)
+        
+        # Delete the image from S3
+        delete_image_from_s3(s3_key)
+
 
         # Respond with a success message
         return {
