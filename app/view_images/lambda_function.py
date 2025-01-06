@@ -3,11 +3,12 @@ import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 
-S3_BUCKET_NAME = 'image_bucket'
+S3_BUCKET_NAME = 'image-bucket-madhu'
 DYNAMODB_TABLE_NAME = 'images-metadata'
+REGION_NAME = 'ap-south-1'
 
-dynamodb = boto3.resource('dynamodb', region_name='eu-west-1', endpoint_url='http://localhost:4566')
-s3 = boto3.client('s3',region_name='eu-west-1', endpoint_url='http://localhost:4566')
+dynamodb = boto3.resource('dynamodb')
+s3 = boto3.client('s3', region_name=REGION_NAME)
 
 def get_image_metadata(image_id):
     table = dynamodb.Table(DYNAMODB_TABLE_NAME)
@@ -48,8 +49,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'message': 'Image not found'})
             }
 
-        s3_key = image_metadata.get('s3_url').split(f'https://{S3_BUCKET_NAME}.s3.amazonaws.com/')[0]
-
+        s3_key = f'{image_id}.jpg'
         presigned_url = generate_presigned_url(S3_BUCKET_NAME, s3_key)
 
         # Respond with the pre-signed URL for image download
